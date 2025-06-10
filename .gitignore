@@ -1,0 +1,12 @@
+# Ignorar arquivos grandes e desnecessários
+*.pdf
+*.exe
+*.pkg
+*.zip
+*.tar.gz
+*.7z
+
+# Ignorar pastas de build
+build/
+dist/
+__pycache__/
