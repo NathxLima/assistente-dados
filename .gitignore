@@ -1,4 +1,6 @@
-# Ignorar arquivos grandes e desnecessários
+# =====================
+# Arquivos grandes
+# =====================
 *.pdf
 *.exe
 *.pkg
@@ -6,7 +8,48 @@
 *.tar.gz
 *.7z
 
-# Ignorar pastas de build
+# =====================
+# Build / cache
+# =====================
 build/
 dist/
 __pycache__/
+*.pyc
+
+# =====================
+# Ambientes virtuais
+# =====================
+.venv/
+venv/
+env/
+
+# =====================
+# Dados sensíveis
+# =====================
+.env
+secrets/
+data/
+
+# =====================
+# Streamlit
+# =====================
+.streamlit/
+
+# =====================
+# Chroma / embeddings
+# =====================
+chroma.sqlite3
+*.lock
+
+# =====================
+# IDEs
+# =====================
+.idea/
+.vscode/
+
+# =====================
+# Sistema operacional
+# =====================
+.DS_Store
+Thumbs.db
+
