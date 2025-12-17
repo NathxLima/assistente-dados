@@ -30,8 +30,6 @@ def carregar_usuarios_hash() -> dict:
     try:
         if "AUTH_USERS_JSON" in st.secrets:
             return json.loads(st.secrets["AUTH_USERS_JSON"])
-    except Exception:
-        pass
 
     # 2️⃣ Desenvolvimento local (.env + arquivo)
     auth_users_file = os.getenv("AUTH_USERS_FILE", "").strip()
