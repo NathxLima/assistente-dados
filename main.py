@@ -25,9 +25,18 @@ st.set_page_config(page_title="🎲 Nathal.IA", layout="wide")
 
 # ================== AUTH (login/senha) ==================
 @st.cache_data(show_spinner=False, ttl=30)
-def carregar_usuarios_hash(auth_users_file: str) -> dict:
+def carregar_usuarios_hash() -> dict:
+    # 1️⃣ Produção (Streamlit Cloud)
+    try:
+        if "AUTH_USERS_JSON" in st.secrets:
+            return json.loads(st.secrets["AUTH_USERS_JSON"])
+    except Exception:
+        pass
+
+    # 2️⃣ Desenvolvimento local (.env + arquivo)
+    auth_users_file = os.getenv("AUTH_USERS_FILE", "").strip()
     if not auth_users_file:
-        raise ValueError("AUTH_USERS_FILE vazio")
+        raise ValueError("AUTH_USERS_FILE vazio e AUTH_USERS_JSON não definido")
 
     arquivo = Path(auth_users_file)
     if not arquivo.exists():
@@ -71,7 +80,7 @@ def gate_autenticacao():
     # carrega usuários
     auth_users_file = os.getenv("AUTH_USERS_FILE", "").strip()
     try:
-        usuarios_hash = carregar_usuarios_hash(auth_users_file)
+        usuarios_hash = carregar_usuarios_hash()
     except Exception as e:
         st.error(f"Erro de autenticação: {e}")
         st.stop()
