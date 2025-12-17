@@ -16,27 +16,55 @@ from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
 from langchain.schema import HumanMessage, AIMessage
 
-
-# ================== CONFIG INICIAL ==================
-load_dotenv()
-os.environ["STREAMLIT_WATCHER_TYPE"] = "none"
-st.set_page_config(page_title="🎲 Nathal.IA", layout="wide")
-# ====================================================
-
 # ================== AUTH (login/senha) ==================
+# Carrega .env APENAS local (no Streamlit Cloud normalmente não existe)
+_ENV_PATH = Path(__file__).with_name(".env")
+if _ENV_PATH.exists():
+    load_dotenv(dotenv_path=_ENV_PATH)
+
+
+def _safe_secrets_dict() -> dict:
+    """Retorna secrets como dict, sem quebrar quando não existe secrets.toml/local."""
+    try:
+        # st.secrets pode dar erro quando não existe secrets.toml
+        return dict(st.secrets)
+    except Exception:
+        return {}
+
+
 @st.cache_data(show_spinner=False, ttl=30)
 def carregar_usuarios_hash() -> dict:
-    # 1️⃣ Produção (Streamlit Cloud)
-    try:
-        if "AUTH_USERS_JSON" in st.secrets:
-            return json.loads(st.secrets["AUTH_USERS_JSON"])
+    """
+    Prioridade:
+    1) Streamlit Secrets: AUTH_USERS_JSON
+    2) .env: AUTH_USERS_JSON
+    3) .env: AUTH_USERS_FILE (caminho para JSON no disco)
+    """
+    secrets = _safe_secrets_dict()
 
-    # 2️⃣ Desenvolvimento local (.env + arquivo)
-    auth_users_file = os.getenv("AUTH_USERS_FILE", "").strip()
+    # 1) Cloud (recomendado): AUTH_USERS_JSON no Secrets
+    auth_json = (secrets.get("AUTH_USERS_JSON") or "").strip()
+    if auth_json:
+        return json.loads(auth_json)
+
+    # 2) Local: AUTH_USERS_JSON no .env
+    auth_json = (os.getenv("AUTH_USERS_JSON", "") or "").strip()
+    if auth_json:
+        return json.loads(auth_json)
+
+    # 3) Local: AUTH_USERS_FILE no .env
+    auth_users_file = (os.getenv("AUTH_USERS_FILE", "") or "").strip()
     if not auth_users_file:
-        raise ValueError("AUTH_USERS_FILE vazio e AUTH_USERS_JSON não definido")
+        raise ValueError(
+            "AUTH_USERS_FILE vazio e AUTH_USERS_JSON não definido.\n"
+            "Dica: defina AUTH_USERS_JSON (recomendado) ou AUTH_USERS_FILE no .env / Secrets do Streamlit."
+        )
 
     arquivo = Path(auth_users_file)
+    if not arquivo.is_absolute():
+        # garante caminho relativo ao projeto
+        arquivo = Path(__file__).parent / arquivo
+
     if not arquivo.exists():
         raise FileNotFoundError(f"Arquivo de usuários não encontrado: {arquivo}")
 
@@ -59,13 +87,11 @@ def validar_login(usuario: str, senha: str, usuarios_hash: dict) -> bool:
 
 
 def gate_autenticacao():
-    # estado inicial
     st.session_state.setdefault("autenticado", False)
     st.session_state.setdefault("usuario", "")
     st.session_state.setdefault("tentativas", 0)
     st.session_state.setdefault("bloqueado_ate", 0.0)
 
-    # já autenticado → segue o app
     if st.session_state["autenticado"]:
         return
 
@@ -75,15 +101,12 @@ def gate_autenticacao():
         st.warning("Muitas tentativas. Aguarde alguns segundos.")
         st.stop()
 
-    # carrega usuários
-    auth_users_file = os.getenv("AUTH_USERS_FILE", "").strip()
     try:
         usuarios_hash = carregar_usuarios_hash()
     except Exception as e:
         st.error(f"Erro de autenticação: {e}")
         st.stop()
 
-    # tela de login
     st.title("🔐 Acesso Restrito — Nathal.IA")
     with st.form("login_form"):
         usuario = st.text_input("Usuário")
@@ -107,10 +130,8 @@ def gate_autenticacao():
 
     st.stop()
 
-
-# ✅ CHAMAR A AUTENTICAÇÃO AQUI (logo após definir)
+# ✅ CHAME AQUI
 gate_autenticacao()
-
 
 def botao_logout():
     if st.session_state.get("autenticado"):
